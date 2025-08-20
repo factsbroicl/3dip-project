@@ -55,12 +55,12 @@ class container(tk.Tk): #Container class for frames
             frame.select.config(height=5, width=15, state="readonly")
             frame.select.bind("<<ComboboxSelected>>", lambda e: frame.progress_update())
             frame.select.set(data[user][0][1])
-            frame.select.grid(row=4, column=2, padx=5, pady=(0, 5), sticky="nsew")
+            frame.select.grid(row=3, column=2, padx=5, pady=(0, 5), sticky="nsew")
         except:
             frame.select = ttk.Combobox(frame.div_relative, values=["Nothing"])
             frame.select.config(height=5, width=15, state="readonly")
             frame.select.bind("<<ComboboxSelected>>", lambda e: frame.progress_update())
-            frame.select.grid(row=4, column=2, padx=5, pady=(0, 5), sticky="nsew")
+            frame.select.grid(row=3, column=2, padx=5, pady=(0, 5), sticky="nsew")
     
     def refresh_progressbar_budget(self):
         frame = self.frames["Budget"]
@@ -71,7 +71,7 @@ class container(tk.Tk): #Container class for frames
             percent = data[user][index_calculate(frame.select.get(), data[user], 1)][3] / data[user][index_calculate(frame.select.get(), data[user], 1)][2] * 100
             if percent >= 100:
                 frame.nametext = tk.Label(frame.div_relative, text="Goal: Reached!", anchor="e", justify="right", font=("arial", 10, "bold"))
-                frame.nametext.grid(row=4, column=1, padx=5, pady=(0, 5), sticky="nsew")
+                frame.nametext.grid(row=3, column=1, padx=5, pady=(0, 5), sticky="nsew")
                 percent = 99.99
             frame.progress.step(percent)
         except:
@@ -86,17 +86,6 @@ class container(tk.Tk): #Container class for frames
             frame.log.config(state="disabled")
         except:
             pass
-    
-    def proc_log(self):
-        frame = self.frames["Budget"]
-        frame.update_idletasks()
-        try:
-            frame.log.config(state="normal")
-            frame.log.insert(tk.INSERT, logs[user])
-            frame.log.config(state="disabled")
-        except:
-            pass
-
 
 class Login(tk.Frame): #Add page frame
     def __init__(self, parent, control):
@@ -136,7 +125,7 @@ class Login(tk.Frame): #Add page frame
         try:
             if bcrypt.checkpw(password, password_c): # Password check
                 user = copy.deepcopy(username) # Sets user
-                self.control.proc_log()
+                self.control.refresh_log_budget(logs[user])
                 password_c = 0
                 self.control.show("Budget")
             else:
@@ -155,7 +144,7 @@ class Login(tk.Frame): #Add page frame
         warning.destroy()
 
     def thread(self, text):
-        t = threading.Thread(target=self.warning, args=(text, ))
+        t = threading.Thread(target=self.warning, args=(text))
         t.start()
 
 class Sign_up(tk.Frame):
@@ -223,7 +212,6 @@ class Sign_up(tk.Frame):
                 updated(data, data_path)
                 updated(logs, log_path)
                 temp_login_data = []
-                print("Account created.")
                 self.control.show("Login")
         except:
             pass
@@ -236,7 +224,7 @@ class Sign_up(tk.Frame):
         warning.destroy()
 
     def thread(self, text):
-        t = threading.Thread(target=self.warning, args=(text, ))
+        t = threading.Thread(target=self.warning, args=(text))
         t.start()
 
 class Budget(tk.Frame): #Add page frame
@@ -255,37 +243,42 @@ class Budget(tk.Frame): #Add page frame
         self.name = ttk.Entry(self.div_relative, width=10)
         self.name.insert(0, "Item name")
         self.name.bind("<FocusIn>", lambda e: self.name.delete('0', 'end'))
-        self.name.grid(row=1, column=1, padx=5, pady=(0, 30), sticky="ew")
+        self.name.grid(row=0, column=2, padx=5, pady=(0, 30), sticky="ew")
 
         self.contribute = ttk.Entry(self.div_relative, width=10)
         self.contribute.insert(0, "Amount in $")
         self.contribute.bind("<FocusIn>", lambda e: self.contribute.delete('0', 'end'))
-        self.contribute.grid(row=3, column=1, padx=5, pady=(0, 30), sticky="ew")
+        self.contribute.grid(row=2, column=1, padx=5, pady=(0, 30), sticky="ew")
+
+        self.c_name = ttk.Entry(self.div_relative, width=10)
+        self.c_name.insert(0, "Contributor name")
+        self.c_name.bind("<FocusIn>", lambda e: self.c_name.delete('0', 'end'))
+        self.c_name.grid(row=2, column=2, padx=5, pady=(0, 30), sticky="ew")
 
         percent0 = tk.Label(self.div_relative, text="0%", anchor="w", justify="left", font=("arial", 10, "bold"))
-        percent0.grid(row=6, column=0, padx=5, pady=(0, 5), sticky="nsew")
+        percent0.grid(row=5, column=0, padx=5, pady=(0, 5), sticky="nsew")
 
         percent100 = tk.Label(self.div_relative, text="100%", anchor="e", justify="right", font=("arial", 10, "bold"))
-        percent100.grid(row=6, column=3, padx=5, pady=(0, 5), sticky="nsew")
+        percent100.grid(row=5, column=3, padx=5, pady=(0, 5), sticky="nsew")
 
         add = tk.Button(self.div_relative, text="Add", command=lambda : self.contribute_money(self.select.get()))
-        add.grid(row=3, column=0, padx=5, pady=(0, 30), sticky="nsew")
+        add.grid(row=2, column=0, padx=5, pady=(0, 30), sticky="nsew")
 
         set = tk.Button(self.div_relative, text="Set", command=lambda : self.set_goal())
         set.grid(row=0, column=0, padx=5, pady=(0, 30), sticky="nsew", rowspan=2)
 
         nametext = tk.Label(self.div_relative, text="Goal:", anchor="e", justify="right", font=("arial", 10, "bold"))
-        nametext.grid(row=4, column=1, padx=5, pady=(0, 5), sticky="nsew")
+        nametext.grid(row=3, column=1, padx=5, pady=(0, 5), sticky="nsew")
 
         logtext = tk.Label(self.div_relative, text="Logs", anchor="w", justify="left", font=("arial", 10, "bold"))
-        logtext.grid(row=7, column=0, padx=5, pady=(0, 5), sticky="nsew")
+        logtext.grid(row=6, column=0, padx=5, pady=(0, 5), sticky="nsew")
 
         self.log = scrolledtext.ScrolledText(self.div_relative, wrap="word")
         self.log.config(state="disabled", width=40, height=7)
-        self.log.grid(row=8, column=0, padx=5, pady=(0, 30), sticky="nsew", columnspan=4)
+        self.log.grid(row=7, column=0, padx=5, pady=(0, 30), sticky="nsew", columnspan=4)
 
         change = ttk.Button(self.div_relative, text="View Setlist", command=lambda : control.show("Setlist")) 
-        change.grid(row=9, column=0, padx=5, pady=5, sticky="nsew")
+        change.grid(row=8, column=0, padx=5, pady=5, sticky="nsew")
     
     def set_goal(self):
         total = self.goal.get()
@@ -300,7 +293,6 @@ class Budget(tk.Frame): #Add page frame
                 if name in j[1]:
                     num += 1
                     final_name = name + " (" + str(num) + ")"
-            print("Check")
             data[user].append([len(data[user]), final_name ,total, 0])
             updated(data, data_path)
             text = "\n" + "Added new goal: " + str(name)
@@ -314,11 +306,12 @@ class Budget(tk.Frame): #Add page frame
     
     def contribute_money(self, item):
         add = self.contribute.get()
+        name = self.c_name.get()
         try:
             add = float(add)
             data[user][index_calculate(item, data[user], 1)][3] += add
             updated(data, data_path)
-            text = "\n" + "Added $" + str(add) + " to goal."
+            text = "\n" + str(name) + " added $" + str(add) + " to goal."
             logs[user] = logs[user] + text
             updated(logs, log_path)
             self.control.refresh_log_budget(text)
@@ -395,6 +388,7 @@ with open(log_path, "r") as fp: #Opens files with saved data
 
 #Runtime
 root = container()
+root.title("BandTied")
 root.minsize(400,400)
-root.maxsize(800,500)
+root.maxsize(500,500)
 root.mainloop()
