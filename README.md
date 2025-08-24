@@ -1,3 +1,4 @@
 # 3dip-project
 School project<br/>
-Required modules to run: Tkinter, OS, JSON, bcrypt, Fernet, Copy, Threading, Timne
+Required modules to run: Tkinter, OS, JSON, bcrypt, Fernet, Copy, Threading, Time
+Required JSON files in the same folder: "data.json", "login.json", "logs.json"
