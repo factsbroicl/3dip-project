@@ -7,19 +7,24 @@ from cryptography.fernet import Fernet
 import copy
 import threading
 import time
+import enviroment
 
 file_path = path.abspath(__file__)
-dir_path = path.dirname(file_path)
-data_path = path.join(dir_path, "data.json") #absolute filepath
+dir_path = path.dirname(file_path) #Absolute filepath
+#Data path of the files
+data_path = path.join(dir_path, "data.json") 
 login_path = path.join(dir_path, "login.json")
 log_path = path.join(dir_path, "logs.json")
 
-data = {} #Stores data
+#Data initial 
+data = {} 
 login = {}
 logs = {}
 user = 0
+ENCRYPT = Fernet(enviroment.key) #Eviromental variable
 
-class container(tk.Tk): #Container class for frames
+class container(tk.Tk): 
+    #Container class for frames
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         div = ttk.Frame(self)
@@ -36,56 +41,104 @@ class container(tk.Tk): #Container class for frames
 
         self.show("Login") #Shows first page
     
-    def show(self, page): #Function to show frames
+    def show(self, page): 
+        #Function to show frames
         frame = self.frames[page]
         frame.tkraise()
         if page == "Budget":
             self.refresh_box_budget()
             self.refresh_progressbar_budget()
-            self.refresh_log_budget()
+            try: #Log refresh sometimes raises an error 
+                self.refresh_log_budget()
+            except:
+                pass
     
-    def refresh_box_budget(self):
+    def refresh_box_budget(self): 
+        # Refreshes the combobox list
         frame = self.frames["Budget"]
         frame.update_idletasks()
         try:
+            u_data = data_unencrypt()
             list = []
-            for i,j in enumerate(data[user]):
+            for i,j in enumerate(u_data):
                 list.append(j[1])
+            # Makes the combo box 
             frame.select = ttk.Combobox(frame.div_relative, values=list)
             frame.select.config(height=5, width=15, state="readonly")
             frame.select.bind("<<ComboboxSelected>>", lambda e: frame.progress_update())
-            frame.select.set(data[user][0][1])
+            frame.select.set(u_data[0][1])
             frame.select.grid(row=3, column=2, padx=5, pady=(0, 5), sticky="nsew")
-        except:
+        except: # Raises when no entries are exisiting, applies no values
             frame.select = ttk.Combobox(frame.div_relative, values=["Nothing"])
             frame.select.config(height=5, width=15, state="readonly")
             frame.select.bind("<<ComboboxSelected>>", lambda e: frame.progress_update())
             frame.select.grid(row=3, column=2, padx=5, pady=(0, 5), sticky="nsew")
     
-    def refresh_progressbar_budget(self):
+    def refresh_progressbar_budget(self): 
+        # Refresh function for the progress bar
         frame = self.frames["Budget"]
         frame.update_idletasks()
         try:
+            u_data = data_unencrypt()
+            # Makes the bar
             frame.progress = ttk.Progressbar(frame.div_relative, length=320)
-            frame.progress.grid(row=5, column=0, padx=5, pady=(0, 5), sticky="ew", columnspan=4)
-            percent = data[user][index_calculate(frame.select.get(), data[user], 1)][3] / data[user][index_calculate(frame.select.get(), data[user], 1)][2] * 100
+            frame.progress.grid(row=4, column=0, padx=5, pady=(0, 5), sticky="ew", columnspan=4)
+            # Calculates percentage
+            percent = (float(u_data[index_calculate(frame.select.get(), u_data, 1)][3]) 
+                       / float(u_data[index_calculate(frame.select.get(), u_data, 1)][2]) * 100)
+            # Based on percent, change the text
             if percent >= 100:
-                frame.nametext = tk.Label(frame.div_relative, text="Goal: Reached!", anchor="e", justify="right", font=("arial", 10, "bold"))
+                frame.nametext = tk.Label(frame.div_relative, text="Completed!", anchor="e", 
+                                          justify="right", font=("arial", 10, "bold"))
                 frame.nametext.grid(row=3, column=1, padx=5, pady=(0, 5), sticky="nsew")
                 percent = 99.99
+            else:
+                frame.nametext = tk.Label(frame.div_relative, text="Goal:", anchor="e", 
+                                          justify="right", font=("arial", 10, "bold"))
+                frame.nametext.grid(row=3, column=1, padx=5, pady=(0, 5), sticky="nsew")
+            # Applies progress to the bar
             frame.progress.step(percent)
         except:
             pass
     
-    def refresh_log_budget(self, text):
+    def refresh_log_budget(self, text): 
+        # Refresh logs
         frame = self.frames["Budget"]
         frame.update_idletasks()
-        try:
+        printed_log = copy.deepcopy(text) # Deecopy to maintain data intregrity 
+        printed_log = printed_log[2:-1]
+        printed_log = ENCRYPT.decrypt(printed_log)
+        printed_log = printed_log.decode("utf-8")
+        try: # Attempts to insert log, raises an error if empty
             frame.log.config(state="normal")
-            frame.log.insert(tk.INSERT, text)
+            frame.log.delete('1.0', tk.END)
+            frame.log.insert(tk.INSERT, printed_log)
             frame.log.config(state="disabled")
         except:
             pass
+
+    def warning(self, page, text): 
+        # Warning message when a inout error is raised, fully based on multithreading
+        frame = self.frames[page]
+        frame.tkraise()
+        if page == "Sign_up" or page == "Login": # Depending on the page, different warnings needs ot be applied
+            warning = tk.Text(frame.div_relative, width=16, height=4, wrap="word")
+            warning.grid(row=4, column=0)
+            warning.insert(tk.END, text)
+        elif page == "Budget":
+            warning = tk.Text(frame.div_relative, width=7, height=6, wrap="word")
+            warning.grid(row=0, column=3, rowspan=3)
+            warning.insert(tk.END, text)
+        time.sleep(5) #Function only application when using multithreading
+        try:
+            warning.destroy()
+        except:
+            pass
+
+    def thread(self, page, text): 
+        # Starts a new thread to run warning to not freezze function
+        t = threading.Thread(target=self.warning, args=[page, text])
+        t.start()
 
 class Login(tk.Frame): #Add page frame
     def __init__(self, parent, control):
@@ -95,33 +148,38 @@ class Login(tk.Frame): #Add page frame
         self.div_relative = ttk.LabelFrame(self, text="Login") #Adds a seperated Div
         self.div_relative.pack(fill="none", expand=True)
 
+        # Entries
         self.username = ttk.Entry(self.div_relative)
         self.username.insert(0, "Username")
+        # Deletes inside text when selected
         self.username.bind("<FocusIn>", lambda e: self.username.delete('0', 'end'))
         self.username.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="ew")
 
         self.password = ttk.Entry(self.div_relative)
         self.password.insert(0, "Password")
+        # Deletes inside text when selected
         self.password.bind("<FocusIn>", lambda e: self.password.delete('0', 'end'))
         self.password.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="ew")
 
+        # Login function call
         enter = ttk.Button(self.div_relative, text="Enter", command=self.login_check) 
         enter.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
 
+        # Calls show function to change
         change = ttk.Button(self.div_relative, text="No account? Sign up!", command=lambda : control.show("Sign_up")) 
         change.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
-        #Calls show function to change
     
-    def login_check(self):
+    def login_check(self): 
+        #Check password with saved password
         global user
         username = self.username.get()
         password = self.password.get()
         password_c = 0
         try:
-            password_c = hash_bytes(copy.deepcopy(login[username]))
+            password_c = hash_bytes(copy.deepcopy(login[username])) # Deepcopy to maintain intregrity of the database
             password = bytes(password, "utf-8")
         except:
-            self.thread("Invalid username or password.")
+            self.control.thread("Login", "Invalid username or password.")
         try:
             if bcrypt.checkpw(password, password_c): # Password check
                 user = copy.deepcopy(username) # Sets user
@@ -129,54 +187,49 @@ class Login(tk.Frame): #Add page frame
                 password_c = 0
                 self.control.show("Budget")
             else:
-                self.thread("Invalid username or password.")
+                self.control.thread("Login", "Invalid username or password.")
         except: # Except due to deepcopy of login, if incorrect username, it would return an error
             if password_c == 0: # This will return an error due to self.control.show handling multiple functions
                 pass
             else:
-                self.thread("Invalid username or password.")
-
-    def warning(self, text):
-        warning = tk.Text(self.div_relative, width=16, height=4, wrap="word")
-        warning.grid(row=4, column=0)
-        warning.insert(tk.END, text)
-        time.sleep(5)
-        warning.destroy()
-
-    def thread(self, text):
-        t = threading.Thread(target=self.warning, args=(text))
-        t.start()
+                self.control.thread("Login", "Invalid username or password.")
 
 class Sign_up(tk.Frame):
     def __init__(self, parent, control):
-        tk.Frame.__init__(self, parent)
-        self.control = control
+        tk.Frame.__init__(self, parent) # Constructs frame from parent class
+        self.control = control # Parent class call
 
-        self.div_relative = ttk.LabelFrame(self, text="Sign up")
+        self.div_relative = ttk.LabelFrame(self, text="Sign up") # Adds a seperate division
         self.div_relative.pack(fill="none", expand=True)
 
+        # Entries
         self.username = ttk.Entry(self.div_relative)
         self.username.insert(0, "Username")
+        # Deletes inside text when selected
         self.username.bind("<FocusIn>", lambda e: self.username.delete('0', 'end'))
         self.username.grid(row=0, column=0, padx=5, pady=(0, 5), sticky="ew")
 
         self.password = ttk.Entry(self.div_relative)
         self.password.insert(0, "Password")
+        # Deletes inside text when selected
         self.password.bind("<FocusIn>", lambda e: self.password.delete('0', 'end'))
         self.password.grid(row=1, column=0, padx=5, pady=(0, 5), sticky="ew")
 
+        # Entry button
         enter = ttk.Button(self.div_relative, text="Create", command=self.make_account) 
         enter.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
 
+        # Change page button
         change = ttk.Button(self.div_relative, text="Got an account? Sign in!", command=lambda : control.show("Login")) 
         change.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
 
     def make_account(self):
+        # Creates account and all relevant data entries
         temp_login_data = []
         username = self.username.get()
         try:
             if username in login.keys(): # Checks if username exists
-                self.thread("Username already exists")
+                self.control.thread("Sign_up", "Username already exists.")
             else:
                 temp_login_data.append(username)
                 password = True
@@ -184,14 +237,17 @@ class Sign_up(tk.Frame):
             # Except because if the data is null, it crashes the program due to returning a null for login 
             temp_login_data.append(username)
             password = True
-        try:
+        try: # Password checks for requirements
             while password:
                 input_create_password = self.password.get()
                 if numcheck(input_create_password) == False:
-                    self.thread("Your password needs to contain at least 1 number.")
+                    self.control.thread("Sign_up", "Your password needs to contain at least 1 number.")
                     break
                 elif specialcheck(input_create_password) == False:
-                    self.thread("Your password needs at least 1 special character or has spaces.")
+                    self.control.thread("Sign_up", "Your password needs at least 1 special character.")
+                    break
+                elif " " in input_create_password:
+                    self.control.thread("Sign_up", "Your password cannot contain spaces.")
                     break
                 else:
                     create = True
@@ -199,6 +255,7 @@ class Sign_up(tk.Frame):
         except:
             pass
 
+        # Seperate loop used to maintain data stucture intregrity and reduce code injection attempts
         try:
             if create == True:
                 input_create_password = str(bcrypt.hashpw
@@ -208,24 +265,13 @@ class Sign_up(tk.Frame):
                 login.update(dict([tupleconver(temp_login_data)])) # Tuple to be able to store
                 updated(login, login_path)
                 data.update(dict.fromkeys([temp_login_data[0]], [])) # Adds keys with empty values for future use
-                logs.update(dict.fromkeys([temp_login_data[0]], "Logs: "))
+                logs.update(dict.fromkeys([temp_login_data[0]], str(ENCRYPT.encrypt(bytes("Logs: ", "utf-8")))))
                 updated(data, data_path)
                 updated(logs, log_path)
                 temp_login_data = []
                 self.control.show("Login")
         except:
             pass
-
-    def warning(self, text):
-        warning = tk.Text(self.div_relative, width=16, height=4, wrap="word")
-        warning.grid(row=4, column=0)
-        warning.insert(tk.END, text)
-        time.sleep(5)
-        warning.destroy()
-
-    def thread(self, text):
-        t = threading.Thread(target=self.warning, args=(text))
-        t.start()
 
 class Budget(tk.Frame): #Add page frame
     def __init__(self, parent, control):
@@ -235,6 +281,9 @@ class Budget(tk.Frame): #Add page frame
         self.div_relative = ttk.LabelFrame(self, text="Budget") #Adds a seperated Div
         self.div_relative.grid(row=0, column=0, padx=20, pady=10)
 
+        # Adds all GUI widgets
+        # Standard format used on entries: Construct, insert text, bind to delete on select, placement on grid
+        # Standard format used on static: Construct, placement on grid
         self.goal = ttk.Entry(self.div_relative, width=10)
         self.goal.insert(0, "Amount in $")
         self.goal.bind("<FocusIn>", lambda e: self.goal.delete('0', 'end'))
@@ -274,64 +323,100 @@ class Budget(tk.Frame): #Add page frame
         logtext.grid(row=6, column=0, padx=5, pady=(0, 5), sticky="nsew")
 
         self.log = scrolledtext.ScrolledText(self.div_relative, wrap="word")
-        self.log.config(state="disabled", width=40, height=7)
+        self.log.config(state="disabled", width=40, height=7) # Disabled to not allow users to write
         self.log.grid(row=7, column=0, padx=5, pady=(0, 30), sticky="nsew", columnspan=4)
 
         change = ttk.Button(self.div_relative, text="View Setlist", command=lambda : control.show("Setlist")) 
         change.grid(row=8, column=0, padx=5, pady=5, sticky="nsew")
     
     def set_goal(self):
+        # Adds goal to relevant databases with encryption 
         total = self.goal.get()
         name = self.name.get()
+        if total[0] == "$": # In case user adds "$" when entering value
+            total = total[1:]
         try:
-            if total[0] == "$":
-                total = total[1:]
-            total = float(total)
-            num = 0
-            final_name = copy.deepcopy(name)
-            for i,j in enumerate(data[user]):
-                if name in j[1]:
-                    num += 1
-                    final_name = name + " (" + str(num) + ")"
-            data[user].append([len(data[user]), final_name ,total, 0])
-            updated(data, data_path)
-            text = "\n" + "Added new goal: " + str(name)
-            logs[user] = logs[user] + text
-            updated(logs, log_path)
-            self.control.refresh_log_budget(text)
-            self.control.refresh_box_budget()
+            total = float(total) # Checks if value is valid and sets the variable to float for manipulation
         except:
-            pass
+            self.control.thread("Budget", "Invalid amount of money.")
+            return 0
+        # Prevents duplicate entries causing problems
+        num = 0
+        final_name = copy.deepcopy(name)
+        u_data = data_unencrypt()
+        for i,j in enumerate(u_data):
+            if name in j[1]:
+                num += 1
+                final_name = name + " (" + str(num) + ")" # Adds (num) to differeniate
+        # Encryption and saving
+        encrypt_name = str(ENCRYPT.encrypt(bytes(final_name, "utf-8")))
+        total = str(ENCRYPT.encrypt(bytes(str(total), "utf-8")))
+        zero = str(ENCRYPT.encrypt(bytes("0", "utf-8")))
+        data[user].append([len(data[user]), encrypt_name ,total, zero])
+        updated(data, data_path)
+
+        # Adds action to logs
+        text = "\n" + "Added new goal: " + str(final_name)
+        new_log = self.log_update(text)
+        logs[user] = str(ENCRYPT.encrypt(bytes(new_log, "utf-8")))
+        updated(logs, log_path)
+
+        #Updates relevant widgets
+        self.control.refresh_log_budget(logs[user])
+        self.control.refresh_box_budget()
+        self.control.refresh_progressbar_budget()
 
     
     def contribute_money(self, item):
+        # Adds value to an existing goal
+        # Note: u = Unencrypted e = Encrypted
         add = self.contribute.get()
         name = self.c_name.get()
         try:
-            add = float(add)
-            data[user][index_calculate(item, data[user], 1)][3] += add
-            updated(data, data_path)
-            text = "\n" + str(name) + " added $" + str(add) + " to goal."
-            logs[user] = logs[user] + text
-            updated(logs, log_path)
-            self.control.refresh_log_budget(text)
-            self.control.refresh_progressbar_budget()
+            add = float(add) # Convert to float and checks if value is valid
         except:
-            pass
+            self.control.thread("Budget", "Invalid amount of money.")
+            return 0
+        u_data = data_unencrypt() # Unencrypted data 
+        num = float(u_data[index_calculate(item, u_data, 1)][3]) # Calculates index of selected goal
+        num += add
+        e_num = str(ENCRYPT.encrypt(bytes(str(num), "utf-8"))) # Encryts data to be stored
+        data[user][index_calculate(item, u_data, 1)][3] = e_num # Updates entry
+        updated(data, data_path)
+        # Logs the action to logs
+        text = "\n" + str(name) + " added $" + str(add) + " to goal."
+        new_log = self.log_update(text)
+        logs[user] = str(ENCRYPT.encrypt(bytes(new_log, "utf-8")))
+        updated(logs, log_path)
+        # Refreshes relevant widgets
+        self.control.refresh_log_budget(logs[user])
+        self.control.refresh_progressbar_budget()
     
     def progress_update(self):
+        # Refreshes progress on rare exceptions such as initial launch
+        # Intregity of these 2 lines lies in the 2 interactions between this and parent class
         self.select.focus()
         self.control.refresh_progressbar_budget()
+    
+    def log_update(self, text):
+        # Updates log used seperately from refresh logs, rather than deleting entire widget,
+        # this merely changes the content, useful for non-initial updates of the logs
+        new_log = copy.deepcopy(logs[user])
+        new_log = new_log[2:-1]
+        new_log = ENCRYPT.decrypt(new_log)
+        new_log = new_log.decode("utf-8")
+        new_log = new_log + text
+        return new_log
 
 class Setlist(tk.Frame): #Add page frame
     def __init__(self, parent, control):
         tk.Frame.__init__(self, parent) #Constructs frame from parent class
-        self.control = control #Parent class call#
+        self.control = control #Parent class call
 
         self.div_relative = ttk.LabelFrame(self, text="Setlist") #Adds a seperated Div
         self.div_relative.grid(row=0, column=0, padx=20, pady=10)
 
-        change = ttk.Button(self.div_relative, text="View Budget", command=lambda : control.show("Finance")) 
+        change = ttk.Button(self.div_relative, text="View Budget", command=lambda : control.show("Budget")) 
         change.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
 def updated(file, path): #Updates and syncs files
@@ -360,6 +445,20 @@ def hash_bytes(input):
     password_c = password_c[2:-1]
     password_c = password_c.encode("utf-8")
     return password_c
+
+def data_unencrypt():
+    info = copy.deepcopy(data[user]) # Deepcopy to maintain data intregrity
+    for i,j in enumerate(info): # Decrypts based on data.json structure
+        j[1] = j[1][2:-1]
+        j[1] = ENCRYPT.decrypt(j[1])
+        j[1] = j[1].decode("utf-8")
+        j[2] = j[2][2:-1]
+        j[2] = ENCRYPT.decrypt(j[2])
+        j[2] = j[2].decode("utf-8")
+        j[3] = j[3][2:-1]
+        j[3] = ENCRYPT.decrypt(j[3])
+        j[3] = j[3].decode("utf-8")
+    return info
 
 def numcheck(input): # Checks for any number in string
     return any(char.isdigit() for char in input)
