@@ -8,6 +8,7 @@ import copy
 import threading
 import time
 import enviroment
+from PIL import ImageTk
 
 file_path = path.abspath(__file__)
 dir_path = path.dirname(file_path) # Absolute filepath
@@ -158,6 +159,11 @@ class Login(tk.Frame): #Add page frame
         tk.Frame.__init__(self, parent) #Constructs frame from parent class
         self.control = control #Parent class call
 
+        bg = ImageTk.PhotoImage(file=(dir_path + "/image/login_signup.png"))
+        background = tk.Label(self, image=bg)
+        background.image = bg
+        background.place(x=0, y=0, relwidth=1, relheight=1)
+
         self.div_relative = ttk.LabelFrame(self, text="Login") #Adds a seperated Div
         self.div_relative.pack(fill="none", expand=True)
 
@@ -211,6 +217,11 @@ class Sign_up(tk.Frame):
     def __init__(self, parent, control):
         tk.Frame.__init__(self, parent) # Constructs frame from parent class
         self.control = control # Parent class call
+
+        bg = ImageTk.PhotoImage(file=(dir_path + "/image/login_signup.png"))
+        background = tk.Label(self, image=bg)
+        background.image = bg
+        background.place(x=0, y=0, relwidth=1, relheight=1)
 
         self.div_relative = ttk.LabelFrame(self, text="Sign up") # Adds a seperate division
         self.div_relative.pack(fill="none", expand=True)
@@ -293,6 +304,11 @@ class Budget(tk.Frame): #Add page frame
         tk.Frame.__init__(self, parent) #Constructs frame from parent class
         self.control = control #Parent class call#
 
+        bg = ImageTk.PhotoImage(file=(dir_path + "/image/background.png"))
+        background = tk.Label(self, image=bg)
+        background.image = bg
+        background.place(x=0, y=0, relwidth=1, relheight=1)
+
         self.div_relative = ttk.LabelFrame(self, text="Budget") #Adds a seperated Div
         self.div_relative.grid(row=0, column=0, padx=20, pady=10)
 
@@ -302,22 +318,22 @@ class Budget(tk.Frame): #Add page frame
         self.goal = ttk.Entry(self.div_relative, width=10)
         self.goal.insert(0, "Amount in $")
         self.goal.bind("<FocusIn>", lambda e: self.goal.delete('0', 'end'))
-        self.goal.grid(row=0, column=1, padx=5, pady=(0, 30), sticky="ew")
+        self.goal.grid(row=0, column=1, padx=5, pady=(0, 20), sticky="ew")
 
         self.name = ttk.Entry(self.div_relative, width=10)
         self.name.insert(0, "Item name")
         self.name.bind("<FocusIn>", lambda e: self.name.delete('0', 'end'))
-        self.name.grid(row=0, column=2, padx=5, pady=(0, 30), sticky="ew")
+        self.name.grid(row=0, column=2, padx=5, pady=(0, 20), sticky="ew")
 
         self.contribute = ttk.Entry(self.div_relative, width=10)
         self.contribute.insert(0, "Amount in $")
         self.contribute.bind("<FocusIn>", lambda e: self.contribute.delete('0', 'end'))
-        self.contribute.grid(row=2, column=1, padx=5, pady=(0, 30), sticky="ew")
+        self.contribute.grid(row=2, column=1, padx=5, pady=(0, 20), sticky="ew")
 
         self.c_name = ttk.Entry(self.div_relative, width=10)
         self.c_name.insert(0, "Contributor name")
         self.c_name.bind("<FocusIn>", lambda e: self.c_name.delete('0', 'end'))
-        self.c_name.grid(row=2, column=2, padx=5, pady=(0, 30), sticky="ew")
+        self.c_name.grid(row=2, column=2, padx=5, pady=(0, 20), sticky="ew")
 
         percent0 = tk.Label(self.div_relative, text="0%", anchor="w", justify="left", font=("arial", 10, "bold"))
         percent0.grid(row=5, column=0, padx=5, pady=(0, 5), sticky="nsew")
@@ -325,11 +341,11 @@ class Budget(tk.Frame): #Add page frame
         percent100 = tk.Label(self.div_relative, text="100%", anchor="e", justify="right", font=("arial", 10, "bold"))
         percent100.grid(row=5, column=3, padx=5, pady=(0, 5), sticky="nsew")
 
-        add = tk.Button(self.div_relative, text="Add", command=lambda : self.contribute_money(self.select.get()))
-        add.grid(row=2, column=0, padx=5, pady=(0, 30), sticky="nsew")
+        add = ttk.Button(self.div_relative, text="Add", command=lambda : self.contribute_money(self.select.get()))
+        add.grid(row=2, column=0, padx=5, pady=(0, 20), sticky="nsew")
 
-        set = tk.Button(self.div_relative, text="Set", command=lambda : self.set_goal())
-        set.grid(row=0, column=0, padx=5, pady=(0, 30), sticky="nsew", rowspan=2)
+        set = ttk.Button(self.div_relative, text="Set", command=lambda : self.set_goal())
+        set.grid(row=0, column=0, padx=5, pady=(0, 20), sticky="nsew", rowspan=2)
 
         nametext = tk.Label(self.div_relative, text="Goal:", anchor="e", justify="right", font=("arial", 10, "bold"))
         nametext.grid(row=3, column=1, padx=5, pady=(0, 5), sticky="nsew")
@@ -339,7 +355,7 @@ class Budget(tk.Frame): #Add page frame
 
         self.log = scrolledtext.ScrolledText(self.div_relative, wrap="word")
         self.log.config(state="disabled", width=40, height=7) # Disabled to not allow users to write
-        self.log.grid(row=7, column=0, padx=5, pady=(0, 30), sticky="nsew", columnspan=4)
+        self.log.grid(row=7, column=0, padx=5, pady=(0, 5), sticky="nsew", columnspan=4)
 
         change = ttk.Button(self.div_relative, text="View Setlist", command=lambda : control.show("Setlist")) 
         change.grid(row=8, column=0, padx=5, pady=5, sticky="nsew")
@@ -432,6 +448,11 @@ class Setlist(tk.Frame): #Add page frame
         tk.Frame.__init__(self, parent) #Constructs frame from parent class
         self.control = control #Parent class call
 
+        bg = ImageTk.PhotoImage(file=(dir_path + "/image/background.png"))
+        background = tk.Label(self, image=bg)
+        background.image = bg
+        background.place(x=0, y=0, relwidth=1, relheight=1)
+
         self.div_relative = ttk.LabelFrame(self, text="Setlist") #Adds a seperated Div
         self.div_relative.grid(row=0, column=0, padx=20, pady=10)
 
@@ -443,16 +464,16 @@ class Setlist(tk.Frame): #Add page frame
         self.item.bind("<FocusIn>", lambda e: self.item.delete('0', 'end'))
         self.item.grid(row=1, column=3, padx=5, pady=(0, 30), sticky="ew")
 
-        add = tk.Button(self.div_relative, text="Add", width=10, command=self.set_item) 
+        add = ttk.Button(self.div_relative, text="Add", width=10, command=self.set_item) 
         add.grid(row=2, column=3, padx=5, pady=(0, 30), sticky="nsew")
 
-        remove = tk.Button(self.div_relative, text="Remove", width=10, command=self.remove_from_list) 
+        remove = ttk.Button(self.div_relative, text="Remove", width=10, command=self.remove_from_list) 
         remove.grid(row=3, column=3, padx=5, pady=(0, 30), sticky="nsew")
 
-        clear = tk.Button(self.div_relative, text="Clear", width=10, command=self.clearlist)
+        clear = ttk.Button(self.div_relative, text="Clear", width=10, command=self.clearlist)
         clear.grid(row=4, column=3, padx=5, pady=(0, 30), sticky="nsew")
 
-        save = tk.Button(self.div_relative, text="Save", width=10, command=self.save_checks)
+        save = ttk.Button(self.div_relative, text="Save", width=10, command=self.save_checks)
         save.grid(row=5, column=3, padx=5, pady=(0, 30), sticky="nsew")
 
         change = ttk.Button(self.div_relative, text="View Budget", command=lambda : control.show("Budget")) 
@@ -632,6 +653,5 @@ with open(setlist_path, "r") as fp: #Opens files with saved data
 #Runtime
 root = container()
 root.title("BandTied")
-root.minsize(400,400)
-root.maxsize(500,500)
+root.maxsize(400,400)
 root.mainloop()
